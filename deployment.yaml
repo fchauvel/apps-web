@@ -1,0 +1,34 @@
+# Kubernetes Configuration
+apiVersion: v1
+kind: Service
+metadata:
+  name: apps-web-lb
+spec:
+  selector:
+    app: apps-web
+  ports:
+    - protocol: "TCP"
+      port: 8000
+      targetPort: 3000
+  type: LoadBalancer
+---    
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: apps-web
+spec:
+  selector:
+    matchLabels:
+      app: apps-web
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app: apps-web
+    spec:
+      containers:
+        - name: apps-web
+          image: ${APPS_WEB_IMAGE}
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 3000
