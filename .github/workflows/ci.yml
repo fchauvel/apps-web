@@ -26,7 +26,8 @@ jobs:
         npm install .
     
     - name: Test
-      run: vitest --run
+      run: |
+        npx vitest --run
 
   publish:
     runs-on: ubuntu-22.04
