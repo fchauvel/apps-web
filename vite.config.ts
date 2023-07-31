@@ -7,4 +7,3 @@ export default defineConfig({
         __version__: JSON.stringify(process.env.npm_package_version)
     }
 });
-g
