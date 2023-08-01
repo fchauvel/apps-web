@@ -8,6 +8,8 @@
 
 <script lang="ts">
 
+  import Button from "@smui/button";
+
   var counter = 0;
 
   function increment() {
@@ -27,11 +29,12 @@
     Counter: {counter} time(s)
   </p>
 
-  <button data-testid={Keys.INCREMENT_BUTTON}
-          on:click={increment}>Increment</button>
+  <Button data-testid={Keys.INCREMENT_BUTTON}
+          on:click={increment}>Increment</Button>
 
-  <button data-testid={Keys.DECREMENT_BUTTON}
-          on:click={decrement}>
+  <Button data-testid={Keys.DECREMENT_BUTTON}
+          on:click={decrement}
+          variant="outlined" >
     Decrement
-  </button>
+  </Button>
 </div>
