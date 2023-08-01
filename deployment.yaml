@@ -29,6 +29,6 @@ spec:
       containers:
         - name: apps-web
           image: ${APPS_WEB_IMAGE}
-          imagePullPolicy: Never
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3000

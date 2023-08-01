@@ -11,8 +11,11 @@ on:
       "*"
 
 env:
-   DOCKER_IMAGE: apps-web
-   PROJECT_ID: ${{ secrets.GPC_PROJECT_ID }}
+   APP_NAME: "apps-web"
+   ARTIFACT_REPOSITORY: "ax-repo"
+   CLUSTER: "ax-cluster"
+   PROJECT_ID: "apps-394206"
+   REGION: "europe-north1"
    SERVICE_ACCOUNT: ${{ secrets.GPC_SERVICE_ACCOUNT }}
    WORKLOAD_PROVIDER: ${{ secrets.GPC_WORKLOAD_PROVIDER }}
    
@@ -45,15 +48,19 @@ jobs:
     permissions:
       contents: 'read'
       id-token: 'write'
+
+    outputs:
+      image: ${{ steps.getImage.outputs.image }}
       
     steps:
     - uses: actions/checkout@v3
 
-    - id: getTag
-      name: Extract the tag of the Docker image
+    - id: getImage
+      name: Compute the qualified image name and tag
       run: |
-         VERSION=$(git describe --tags --abbrev=0)
-         echo "::set-output name=tag::${VERSION}"
+        TAG=$(git describe --tags --abbrev=0)
+        QUALIFIED_NAME="${REGION}-docker.pkg.dev/${PROJECT_ID}/${ARTIFACT_REPOSITORY}/${APP_NAME}"
+        echo "image=${QUALIFIED_NAME}:${TAG}" >> ${GITHUB_OUTPUT}
 
     - id: auth
       name: Authenticate with Google Cloud
@@ -61,7 +68,7 @@ jobs:
       with:
         token_format: access_token
         workload_identity_provider: ${{ secrets.GPC_WORKLOAD_PROVIDER }}
-        service_account: ${{ secrets.GPC_SERVICE_ACCOUNT }}@${{ secrets.GPC_PROJECT_ID }}.iam.gserviceaccount.com
+        service_account: ${{ secrets.GPC_SERVICE_ACCOUNT }}@${{ env.PROJECT_ID }}.iam.gserviceaccount.com
         access_token_lifetime: 300s
 
     - name: Login to Artifact Registry
@@ -77,5 +84,37 @@ jobs:
       with:
         push: true
         tags: |
-             europe-north1-docker.pkg.dev/${{ secrets.GPC_PROJECT_ID }}/ax-repo/apps-web:${{ steps.getTag.outputs.tag }}
-             europe-north1-docker.pkg.dev/${{ secrets.GPC_PROJECT_ID }}/ax-repo/apps-web:latest
+          ${{ steps.getImage.outputs.image }}
+
+  deploy:
+    runs-on: ubuntu-22.04
+    needs: publish
+
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+      
+    steps:
+    - uses: actions/checkout@v3
+      
+    - id: auth
+      uses: 'google-github-actions/auth@v1'
+      with:
+        workload_identity_provider: ${{ secrets.GPC_WORKLOAD_PROVIDER }}
+        service_account: ${{ secrets.GPC_SERVICE_ACCOUNT }}@${{ env.PROJECT_ID }}.iam.gserviceaccount.com
+        
+    - name: Get GKE Credentials
+      uses: google-github-actions/get-gke-credentials@v1
+      with:
+        cluster_name: ${{ env.CLUSTER }}
+        location: ${{ env.REGION }}
+        credentials: ${{ secrets.GPC_SERVICE_ACCOUNT_KEY }}
+
+    - name: Deploy New Image
+      env:
+        APPS_WEB_IMAGE: ${{ needs.publish.outputs.image }}
+      run: |
+        echo "Image: ${APPS_WEB_IMAGE}"
+        kubectl set image deployments/apps-web apps-web="${APPS_WEB_IMAGE}"
+        kubectl rollout status deployments/apps-web
+        kubectl get pods
