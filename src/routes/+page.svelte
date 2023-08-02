@@ -1,8 +1,8 @@
 <script lang="ts">
-  import Counter from "../components/Counter.svelte";
+  import { default as ProjectList } from "../components/projects/List.svelte";
 </script>
 
 <h1>Welcome to SvelteKit</h1>
 <p>Visit <a href="https://kit.svelte.dev">kit.svelte.dev</a> to read the documentation</p>
-<Counter/>
+<ProjectList/>
 <p>Version: {__version__}</p>
