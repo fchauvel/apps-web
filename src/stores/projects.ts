@@ -1,5 +1,11 @@
 import { writable } from "svelte/store";
 
+import axios from "axios";
+
+import { Setup } from "../../setup";
+
+
+
 export class Project {
 
     static fromJsonDocument(document: any): Project {
@@ -60,16 +66,29 @@ export function createProjectStore (api: ProjectApi): writable<Project> {
 
 export class ProjectApi {
 
-    async fetchAllProjects (): any {
-        return [
-            {
-                id: "proj-1",
-                name: "Sample Project 1",
-                startDate: "2023/07/31",
-                budget: 1000000
-            }
-        ];
+    private readonly apiBaseUrl: string;
+
+    constructor (apiBaseUrl: string) {
+        this.apiBaseUrl = apiBaseUrl;
     }
+
+    async fetchAllProjects (): any {
+        try {
+            const response = await axios.get(this.allProjectsURL);
+            return response.data;
+
+        } catch (error) {
+            console.log(`Unable to fetch all projects from ${this.allProjectsURL}`);
+            throw error;
+
+        }
+
+    }
+
+    private get allProjectsURL () {
+        return this.apiBaseUrl + "/projects";
+    }
+
 }
 
-export const projectStore = createProjectStore(new ProjectApi());
+export const projectStore = createProjectStore(new ProjectApi(Setup.API_BASE_URL));
